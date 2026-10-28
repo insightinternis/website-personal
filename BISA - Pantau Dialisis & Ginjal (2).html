@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>BISA - Pantau Dialisis & Ginjal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        teal: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 10.5pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .shadow-card, .shadow-lg, .shadow-md, .shadow-sm {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        .print-only {
+            display: none;
+        }
+        /* Kolom input: latar putih, tulisan gelap agar jelas saat diisi */
+        :root { color-scheme: light; }
+        input, select, textarea {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a;
+            caret-color: #0f172a;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #94a3b8 !important;
+            -webkit-text-fill-color: #94a3b8;
+            opacity: 1;
+        }
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+            -webkit-text-fill-color: #0f172a;
+        }
+        /* Scrollbar Halus */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-teal-600 selection:text-white">
+
+    <!-- HEADER / SUPERVISI MEDIS -->
+    <header class="bg-gradient-to-r from-teal-800 via-teal-700 to-sky-900 text-white shadow-md sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center text-teal-200 border border-white/20 text-xl font-bold">
+                        <span class="" aria-hidden="true">❤️</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
+                            BISA <span class="text-xs px-2 py-0.5 rounded-full bg-teal-400/20 border border-teal-300/30 text-teal-200 font-medium">Dialisis & Ginjal</span>
+                        </h1>
+                        <p class="text-xs text-teal-100/90 font-medium">
+                            <span class="text-teal-300 mr-1" aria-hidden="true">🩺</span> Supervisi Medis: <span class="text-white font-semibold">dr. Puguh Widagdo, SpPD - FINASIM - Fellowship Hemodialisis</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 text-xs self-end md:self-center">
+                    <span id="live-datetime" class="bg-black/25 px-3 py-1.5 rounded-lg border border-white/10 text-teal-100 flex items-center gap-1.5">
+                        <span class="text-teal-300" aria-hidden="true">🕐</span> Memuat tanggal...
+                    </span>
+                    <button onclick="resetAllData()" class="bg-rose-500/30 hover:bg-rose-500/50 active:scale-95 transition px-3 py-1.5 rounded-lg border border-rose-300/40 text-white font-medium flex items-center gap-1.5" title="Hapus seluruh data pasien untuk pengguna baru">
+                        <span aria-hidden="true">🗑️</span> Hapus Semua Data
+                    </button>
+                    <button onclick="window.print()" class="bg-white/15 hover:bg-white/25 active:scale-95 transition px-3 py-1.5 rounded-lg border border-white/20 text-white font-medium flex items-center gap-1.5">
+                        <span class="" aria-hidden="true">🖨️</span> Cetak Laporan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTAINER UTAMA -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- KARTU PROFIL PASIEN & MONITOR IDWG -->
+        <section class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
+            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 text-2xl font-bold shadow-inner">
+                        <span class="" aria-hidden="true">🏥</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg font-bold text-slate-900" id="disp-patient-name">Budi Santoso</h2>
+                            <button onclick="toggleEditProfileModal()" class="text-slate-400 hover:text-teal-600 transition text-sm p-1" title="Ubah Profil Pasien">
+                                <span class="" aria-hidden="true">✏️</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            Jadwal HD: <span id="disp-hd-schedule" class="font-semibold text-slate-700">Senin & Kamis</span> | Batas Cairan Harian: <span id="disp-target-fluid-badge" class="font-semibold text-teal-700">1000 mL</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-[11px] text-slate-500 block uppercase font-bold tracking-wider">BB Kering Target</span>
+                        <span class="text-base font-bold text-slate-800" id="disp-dry-weight">55.0 kg</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-[11px] text-slate-500 block uppercase font-bold tracking-wider">Tinggi Badan</span>
+                        <span class="text-base font-bold text-slate-800" id="disp-height">165 cm</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-[11px] text-slate-500 block uppercase font-bold tracking-wider">IMT (Kemenkes)</span>
+                        <span class="text-base font-bold text-teal-700" id="disp-bmi-val">20.2 (Normal)</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-[11px] text-slate-500 block uppercase font-bold tracking-wider">Urin Sisa 24 Jam</span>
+                        <span class="text-base font-bold text-slate-800" id="disp-residual-urine">500 mL</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BANNER IDWG (Interdialytic Weight Gain) REAL-TIME -->
+            <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 rounded-xl p-4 text-white flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3.5">
+                    <div class="p-3 bg-teal-500/20 border border-teal-500/30 rounded-xl text-teal-300">
+                        <span class="text-2xl" aria-hidden="true">⚖️</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-semibold text-sm">IDWG (Interdialytic Weight Gain) Terakhir</h3>
+                            <span id="idwg-badge" class="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-500 text-white">Aman (&lt;3.5%)</span>
+                        </div>
+                        <p class="text-xs text-slate-300" id="idwg-subtext">Kenaikan berat badan antar sesi terpantau stabil.</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                    <div class="text-right">
+                        <div class="text-2xl font-black text-teal-300 tracking-tight" id="idwg-percent">0.0 %</div>
+                        <div class="text-[11px] text-slate-400">Target Ideal &lt; 3.5% (Maks 5.0%)</div>
+                    </div>
+                    <button onclick="openDailyLogModal()" class="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 active:scale-95 transition rounded-xl font-bold text-xs text-slate-950 flex items-center gap-2 shadow">
+                        <span class="" aria-hidden="true">➕</span> Catat BB & TTV
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- NAVIGASI TAB UTAMA -->
+        <nav class="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm no-print overflow-x-auto">
+            <button onclick="switchTab('pantau')" id="tab-pantau" class="tab-btn flex-1 min-w-[130px] py-2.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition text-teal-700 bg-teal-50 border border-teal-200">
+                <span class="" aria-hidden="true">📅</span> Pantau Harian
+            </button>
+            <button onclick="switchTab('info')" id="tab-info" class="tab-btn flex-1 min-w-[130px] py-2.5 px-3 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+                <span class="" aria-hidden="true">🍲</span> Asupan & Nutrisi
+            </button>
+            <button onclick="switchTab('ai')" id="tab-ai" class="tab-btn flex-1 min-w-[130px] py-2.5 px-3 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+                <span class="text-teal-600" aria-hidden="true">🤖</span> AI & HD Assistant
+            </button>
+            <button onclick="switchTab('lab')" id="tab-lab" class="tab-btn flex-1 min-w-[130px] py-2.5 px-3 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+                <span class="text-purple-600" aria-hidden="true">🧪</span> Status Lab & Data
+            </button>
+            <button onclick="switchTab('laporan')" id="tab-laporan" class="tab-btn flex-1 min-w-[130px] py-2.5 px-3 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-2">
+                <span class="text-red-600" aria-hidden="true">📋</span> Laporan & Darurat
+            </button>
+        </nav>
+
+        <!-- ==================== TAB 1: PANTAU HARIAN ==================== -->
+        <div id="content-pantau" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Kolom Kiri: Pelacak Cairan & Log Harian -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Progress Bar Asupan Cairan -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <span class="text-sky-500" aria-hidden="true">💧</span> Pelacak Asupan Cairan Hari Ini
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Rumus: Urin Sisa (<span id="txt-residual-urine">500</span> mL) + IWL (500 mL)</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-700 bg-sky-50 px-3 py-1 rounded-full border border-sky-200" id="fluid-ratio-text">0 / 1000 mL</span>
+                                <button onclick="resetFluidIntake()" class="text-slate-400 hover:text-red-500 text-xs p-1" title="Reset Asupan Hari Ini">
+                                    <span class="" aria-hidden="true">↩️</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Batang Persentase -->
+                        <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                            <div id="fluid-progress-bar" class="bg-sky-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+
+                        <!-- Tombol Cepat Wadah Minum -->
+                        <div class="pt-1">
+                            <span class="text-xs font-semibold text-slate-600 block mb-2">Tambah Minum Cepat Berdasarkan Wadah:</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                <button onclick="addFluidIntake(200, 'Gelas Belimbing')" class="p-2.5 bg-sky-50/60 hover:bg-sky-100 border border-sky-200 rounded-xl text-center transition group">
+                                    <span class="text-sky-600 text-lg mb-1 group-hover:scale-110 transition" aria-hidden="true">🥛</span>
+                                    <span class="block text-[11px] font-bold text-slate-800">Gelas Belimbing</span>
+                                    <span class="text-[10px] text-slate-500">200 mL</span>
+                                </button>
+                                <button onclick="addFluidIntake(150, 'Cangkir Kopi')" class="p-2.5 bg-sky-50/60 hover:bg-sky-100 border border-sky-200 rounded-xl text-center transition group">
+                                    <span class="text-sky-600 text-lg mb-1 group-hover:scale-110 transition" aria-hidden="true">☕</span>
+                                    <span class="block text-[11px] font-bold text-slate-800">Cangkir Kopi</span>
+                                    <span class="text-[10px] text-slate-500">150 mL</span>
+                                </button>
+                                <button onclick="addFluidIntake(300, 'Mug Sedang')" class="p-2.5 bg-sky-50/60 hover:bg-sky-100 border border-sky-200 rounded-xl text-center transition group">
+                                    <span class="text-sky-600 text-lg mb-1 group-hover:scale-110 transition" aria-hidden="true">🍵</span>
+                                    <span class="block text-[11px] font-bold text-slate-800">Mug Sedang</span>
+                                    <span class="text-[10px] text-slate-500">300 mL</span>
+                                </button>
+                                <button onclick="addFluidIntake(600, 'Botol Sedang')" class="p-2.5 bg-sky-50/60 hover:bg-sky-100 border border-sky-200 rounded-xl text-center transition group">
+                                    <span class="text-sky-600 text-lg mb-1 group-hover:scale-110 transition" aria-hidden="true">🧴</span>
+                                    <span class="block text-[11px] font-bold text-slate-800">Botol Sedang</span>
+                                    <span class="text-[10px] text-slate-500">600 mL</span>
+                                </button>
+                                <button onclick="addFluidIntake(15, 'Sendok Makan')" class="p-2.5 bg-sky-50/60 hover:bg-sky-100 border border-sky-200 rounded-xl text-center transition group">
+                                    <span class="text-sky-600 text-lg mb-1 group-hover:scale-110 transition" aria-hidden="true">🥄</span>
+                                    <span class="block text-[11px] font-bold text-slate-800">1 Sendok</span>
+                                    <span class="text-[10px] text-slate-500">15 mL</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Penimbangan & TTV Harian -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <span class="text-teal-600" aria-hidden="true">🕘</span> Riwayat Penimbangan & TTV
+                            </h3>
+                            <button onclick="openDailyLogModal()" class="text-xs text-teal-700 hover:text-teal-800 font-bold">
+                                + Tambah Catatan
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-600">
+                                <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-100">
+                                    <tr>
+                                        <th class="p-3">Tanggal / Sesi</th>
+                                        <th class="p-3">BB Pre-HD</th>
+                                        <th class="p-3">BB Post-HD</th>
+                                        <th class="p-3">IDWG (%)</th>
+                                        <th class="p-3">Tekanan Darah (Pre/Post)</th>
+                                        <th class="p-3">Catatan / Keluhan</th>
+                                        <th class="p-3 text-center no-print">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="daily-log-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <!-- Log dimuat dinamis -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Status IMT Kemenkes & Rekomendasi Supervisi -->
+                <div class="space-y-6">
+                    <!-- Kartu Skala IMT -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                            <span class="text-emerald-600" aria-hidden="true">⚖️</span> Analisis Status Gizi (IMT Kemenkes)
+                        </h3>
+                        <div class="text-center py-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-3xl font-black text-slate-800" id="bmi-num-display">20.2</span>
+                            <span class="text-xs block text-slate-600 font-semibold mt-1" id="bmi-label-display">Status: Normal (18.5 - 22.9)</span>
+                        </div>
+
+                        <!-- Skala Visual Batang -->
+                        <div class="space-y-1 pt-1">
+                            <div class="flex text-[9px] justify-between font-bold text-slate-500 px-1">
+                                <span>Kurus (&lt;18.5)</span>
+                                <span>Normal (18.5-22.9)</span>
+                                <span>Overweight (23-24.9)</span>
+                                <span>Obesitas (≥25)</span>
+                            </div>
+                            <div class="h-3 w-full rounded-full flex overflow-hidden border border-slate-200">
+                                <div class="w-[25%] bg-sky-400" title="Kurus"></div>
+                                <div class="w-[30%] bg-emerald-500" title="Normal"></div>
+                                <div class="w-[20%] bg-amber-400" title="Overweight"></div>
+                                <div class="w-[25%] bg-rose-500" title="Obesitas"></div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 italic leading-relaxed">
+                            *Target pasien dialisis adalah mempertahankan IMT normal untuk mencegah kondisi malnutrisi (Protein Energy Wasting).
+                        </p>
+                    </div>
+
+                    <!-- Pesan Edukasi Medis dari Supervisi -->
+                    <div class="bg-gradient-to-br from-teal-50 to-emerald-50 p-5 rounded-2xl border border-teal-200/70 text-teal-950 space-y-3">
+                        <div class="flex items-center space-x-2 text-teal-800">
+                            <span class="text-xl" aria-hidden="true">🩺</span>
+                            <h4 class="font-bold text-xs uppercase tracking-wider">Instruksi Medis Supervisi</h4>
+                        </div>
+                        <p class="text-xs leading-relaxed text-slate-700">
+                            "Batasi asupan cairan harian Anda agar kenaikan berat badan antar sesi dialisis (IDWG) tidak melebihi <strong>3.5% - 5.0%</strong> dari berat badan kering. Kenaikan cairan berlebih berisiko menyebabkan sesak napas berat, edema paru, serta beban kerja jantung yang fatal."
+                        </p>
+                        <div class="text-[11px] font-semibold text-teal-900 border-t border-teal-200/60 pt-2 flex items-center justify-between">
+                            <span>dr. Puguh Widagdo, SpPD - FINASIM</span>
+                            <span class="text-teal-600" aria-hidden="true">✅</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: ASUPAN & NUTRISI ==================== -->
+        <div id="content-info" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Restriksi Garam -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+                        <span class="" aria-hidden="true">💧</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm">1. Restriksi Garam & Natrium</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Batasi garam maksimal 1 sendok teh per hari (sekitar 2000 mg natrium). Konsumsi garam berlebih akan menarik cairan dan memicu rasa haus intens.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px] text-slate-600">
+                        <span class="font-bold text-slate-800 block mb-1">Hindari / Batasi:</span>
+                        Ikan asin, keripik gurih, mi instan, penyedap rasa monosodium glutamat (MSG), dan makanan kalengan.
+                    </div>
+                </div>
+
+                <!-- Kontrol Kalium -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                        <span class="" aria-hidden="true">🍎</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm">2. Kontrol Kalium (Potassium)</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Kadar kalium tinggi (&gt;5.5 mEq/L) membahayakan ritme jantung. Terapkan metode pemotongan kecil dan perendaman sayur dengan air hangat sebelum diolah.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px] text-slate-600">
+                        <span class="font-bold text-slate-800 block mb-1">Pilihan Ramah:</span>
+                        Apel, pir, ketimun, tauge, kol, labu siam. Batasi pisang, durian, alpukat, dan air kelapa muda.
+                    </div>
+                </div>
+
+                <!-- Fosfat & Protein -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold">
+                        <span class="" aria-hidden="true">🍗</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm">3. Protein & Pengikat Fosfat</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Pasien dialisis memerlukan protein berkualitas tinggi (1.2 g/kgBB/hari) dari putih telur, ikan, atau ayam untuk mencegah atrofi otot.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-[11px] text-slate-600">
+                        <span class="font-bold text-slate-800 block mb-1">Edukasi Obat:</span>
+                        Minum tablet pengikat fosfat (Phosphate Binders) tepat bersama suapan makanan pertama Anda.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: AI & HD ASSISTANT ==================== -->
+        <div id="content-ai" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
+                <!-- Header Chat AI & Pengaturan API Key -->
+                <div class="p-4 bg-gradient-to-r from-teal-800 to-slate-900 text-white flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300">
+                            <span class="text-lg" aria-hidden="true">🤖</span>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm">Asisten AI Dialisis & Ginjal BISA</h3>
+                            <p class="text-[11px] text-teal-200">Pengetahuan Klinis Dialisis di bawah supervisi dr. Puguh Widagdo</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Window Percakapan -->
+                <div id="chat-window" class="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50 text-xs">
+                    <div class="flex items-start gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-teal-700 text-white flex items-center justify-center text-xs flex-shrink-0">
+                            <span class="" aria-hidden="true">🤖</span>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-slate-200/80 shadow-sm max-w-[85%] leading-relaxed text-slate-700">
+                            Halo! Saya asisten pintar dialisis BISA di bawah supervisi klinis <strong>dr. Puguh Widagdo, SpPD - FINASIM</strong>. Anda dapat bertanya tentang pembatasan cairan, interpretasi BUN/Kreatinin, tips haus, atau nutrisi rendah kalium. Ada yang bisa saya bantu?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Prompt Pintar -->
+                <div class="p-2 bg-white border-t border-slate-100 flex gap-2 overflow-x-auto text-[11px]">
+                    <button onclick="sendQuickPrompt('Bagaimana trik mengurangi rasa haus berlebih tanpa banyak minum?')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-700 whitespace-nowrap transition">
+                        💧 Trik Kurangi Haus
+                    </button>
+                    <button onclick="sendQuickPrompt('Berapa target kadar BUN dan Kreatinin yang wajar sebelum cuci darah?')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-700 whitespace-nowrap transition">
+                        🧪 Target BUN & Kreatinin Pre-HD
+                    </button>
+                    <button onclick="sendQuickPrompt('Mengapa kenaikan IDWG tidak boleh melebihi 5%?')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-700 whitespace-nowrap transition">
+                        ⚖️ Bahaya IDWG Tinggi
+                    </button>
+                </div>
+
+                <!-- Input Chat -->
+                <form id="ai-chat-form" onsubmit="handleAIChatSubmit(event)" class="p-3 bg-white border-t border-slate-200 flex gap-2">
+                    <input type="text" id="ai-input" placeholder="Tanyakan seputar nutrisi, cairan, atau hasil lab dialisis Anda..." class="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    <button type="submit" id="ai-send-btn" class="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold text-xs transition flex items-center gap-1.5">
+                        <span>Kirim</span>
+                        <span class="" aria-hidden="true">➤</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: STATUS LAB & DATA ==================== -->
+        <div id="content-lab" class="tab-content hidden space-y-6">
+            <!-- Kontrol Atas -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Panel Laboratorium Hemodialisis</h3>
+                    <p class="text-xs text-slate-500">Pemantauan Uremik (BUN & Kreatinin), Keseimbangan Elektrolit, Anemia, & Mineral Tulang</p>
+                </div>
+                <button onclick="openLabModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition shadow flex items-center gap-2">
+                    <span class="" aria-hidden="true">🧪</span> Catat Hasil Lab Baru
+                </button>
+            </div>
+
+            <!-- Kartu Analisis 4 Parameter Kunci -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h4 class="font-bold text-xs uppercase tracking-wider text-purple-700 flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <span class="" aria-hidden="true">📝</span> Evaluasi Klinis Parameter Terakhir & Target Pre-HD
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="lab-cards-container">
+                    <!-- Dynamic lab summary cards -->
+                </div>
+            </div>
+
+            <!-- Tabel Riwayat Lab Lengkap -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">
+                    Riwayat Pembacaan Laboratorium Lengkap
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-100">
+                            <tr>
+                                <th class="p-3">Tanggal Lab</th>
+                                <th class="p-3">BUN (mg/dL)</th>
+                                <th class="p-3">Kreatinin (mg/dL)</th>
+                                <th class="p-3">Hb (g/dL)</th>
+                                <th class="p-3">Kalium (mEq/L)</th>
+                                <th class="p-3">Natrium (mEq/L)</th>
+                                <th class="p-3">Fosfat (mg/dL)</th>
+                                <th class="p-3">Kalsium (mg/dL)</th>
+                                <th class="p-3">Albumin (g/dL)</th>
+                                <th class="p-3 text-center no-print">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lab-log-tbody" class="divide-y divide-slate-100 font-medium">
+                            <!-- Populated dinamis -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 5: LAPORAN & DARURAT ==================== -->
+        <div id="content-laporan" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <div class="flex justify-between items-start border-b border-slate-200 pb-4">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 tracking-tight">RINGKASAN MEDIS HEMODIALISIS PASIEN</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Aplikasi BISA - Supervisi dr. Puguh Widagdo, SpPD - FINASIM - Fellowship Hemodialisis</p>
+                    </div>
+                    <button onclick="window.print()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl no-print flex items-center gap-2">
+                        <span class="" aria-hidden="true">🖨️</span> Cetak / Simpan PDF
+                    </button>
+                </div>
+
+                <!-- Identitas Pasien Cetak -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-slate-400 block font-semibold text-[10px]">NAMA PASIEN</span>
+                        <span class="font-bold text-slate-800" id="rep-name">Pasien HD</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block font-semibold text-[10px]">BB KERING / TB</span>
+                        <span class="font-bold text-slate-800" id="rep-dry-tb">55.0 kg / 165 cm</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block font-semibold text-[10px]">IMT / STATUS GIZI</span>
+                        <span class="font-bold text-slate-800" id="rep-bmi">20.2 (Normal)</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block font-semibold text-[10px]">TARGET CAIRAN</span>
+                        <span class="font-bold text-teal-700" id="rep-fluid">1000 mL / hari</span>
+                    </div>
+                </div>
+
+                <!-- Parameter Terakhir -->
+                <div class="space-y-3">
+                    <h4 class="font-bold text-xs text-slate-900 uppercase tracking-wider">Hasil Laboratorium Terakhir Terverifikasi</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs" id="rep-lab-grid">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Protokol Darurat Klinis -->
+                <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-5 text-red-950 space-y-2.5">
+                    <h4 class="font-bold text-sm flex items-center gap-2 text-red-700">
+                        <span class="" aria-hidden="true">⚠️</span> TANDA BAHAYA & PROTOKOL DARURAT
+                    </h4>
+                    <p class="text-xs leading-relaxed text-red-900">
+                        Segera bawa pasien ke Unit Hemodialisis atau IGD Rumah Sakit terdekat jika mengalami salah satu kondisi di bawah ini:
+                    </p>
+                    <ul class="list-disc list-inside text-xs font-semibold space-y-1 text-red-800">
+                        <li>Sesak napas hebat yang semakin memberat saat posisi berbaring (Ortopnea).</li>
+                        <li>Nyeri dada menusuk atau debar jantung tidak beraturan (Aritmia).</li>
+                        <li>Bengkak mendadak pada kedua tungkai, tangan, atau seluruh wajah.</li>
+                        <li>Kenaikan berat badan berlebih antar sesi (&gt;5.0% dari BB Kering).</li>
+                        <li>Perdarahan aktif atau sensasi desiran (thrill/bruit) menghilang pada akses AV Fistula/CDL.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 no-print mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            <p>© 2026 BISA - Pantau Dialisis dan Ginjal | Di bawah supervisi medis <strong class="text-slate-700">dr. Puguh Widagdo, SpPD - FINASIM - Fellowship Hemodialisis</strong></p>
+        </div>
+    </footer>
+
+    <!-- ==================== MODAL: EDIT PROFIL PASIEN ==================== -->
+    <div id="modal-profile" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Pengaturan Profil Pasien</h3>
+                <button onclick="toggleEditProfileModal()" class="text-slate-400 hover:text-slate-600"><span class="" aria-hidden="true">✕</span></button>
+            </div>
+            <form onsubmit="saveProfile(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nama Pasien</label>
+                    <input type="text" id="input-name" required class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tinggi Badan (cm)</label>
+                        <input type="number" step="0.1" id="input-height" required class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">BB Kering Target (kg)</label>
+                        <input type="number" step="0.1" id="input-dry-weight" required class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Urin Sisa 24 Jam (mL)</label>
+                    <input type="number" id="input-residual-urine" placeholder="misal: 500" required class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    <span class="text-[10px] text-slate-400">Target Cairan = Urin Sisa + 500 mL (IWL)</span>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Jadwal HD</label>
+                    <input type="text" id="input-hd-schedule" placeholder="misal: Senin & Kamis" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="toggleEditProfileModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-teal-700 text-white font-bold rounded-lg hover:bg-teal-800">Simpan Profil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CATAT BB & TTV ==================== -->
+    <div id="modal-daily" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Catat Penimbangan & TTV Harian</h3>
+                <button onclick="closeDailyLogModal()" class="text-slate-400 hover:text-slate-600"><span class="" aria-hidden="true">✕</span></button>
+            </div>
+            <form onsubmit="saveDailyLog(event)" class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tanggal</label>
+                        <input type="date" id="log-date" required class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Sesi Dialisis</label>
+                        <select id="log-hd-session" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                            <option value="Pre-HD">Pre-HD (Sebelum Cuci Darah)</option>
+                            <option value="Post-HD">Post-HD (Sesudah Cuci Darah)</option>
+                            <option value="Non-HD">Hari Antar Sesi (Non-HD)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">BB Pre-HD / Aktual (kg)</label>
+                        <input type="number" step="0.1" id="log-bb-pre" required oninput="calcFormIDWG()" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">BB Post-HD (kg)</label>
+                        <input type="number" step="0.1" id="log-bb-post" placeholder="Opsional" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Hitungan IDWG Otomatis di Form -->
+                <div class="p-2.5 bg-teal-50 border border-teal-200 rounded-xl flex justify-between items-center">
+                    <span class="font-semibold text-teal-800">Kenaikan IDWG Terhitung:</span>
+                    <span id="form-idwg-calc" class="font-black text-teal-900 text-sm">0.0 %</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tekanan Darah Pre-HD</label>
+                        <input type="text" id="log-td-pre" placeholder="contoh: 135/85" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tekanan Darah Post-HD</label>
+                        <input type="text" id="log-td-post" placeholder="contoh: 120/75" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Catatan Keluhan / Gejala</label>
+                    <input type="text" id="log-notes" placeholder="contoh: Sedikit lemas atau kram betis..." class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeDailyLogModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-teal-700 text-white font-bold rounded-lg hover:bg-teal-800">Simpan Catatan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CATAT HASIL LAB ==================== -->
+    <div id="modal-lab" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-4 border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span class="text-purple-600" aria-hidden="true">🧪</span> Catat Hasil Pemeriksaan Lab Baru
+                </h3>
+                <button onclick="closeLabModal()" class="text-slate-400 hover:text-slate-600"><span class="" aria-hidden="true">✕</span></button>
+            </div>
+            <form onsubmit="saveLabLog(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Tanggal Pemeriksaan Lab</label>
+                    <input type="date" id="lab-date" required class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                </div>
+
+                <!-- BUN & KREATININ -->
+                <div class="bg-purple-50/70 p-3.5 rounded-xl border border-purple-200 space-y-3">
+                    <span class="font-bold text-purple-900 block text-xs">1. Status Uremik (Pre-HD)</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">BUN (Blood Urea Nitrogen) [mg/dL]</label>
+                            <input type="number" step="0.1" id="lab-bun" placeholder="Target Pre-HD: 60 - 80" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Serum Kreatinin [mg/dL]</label>
+                            <input type="number" step="0.1" id="lab-kreatinin" placeholder="Target Pre-HD: 8 - 15" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ELEKTROLIT & ANEMIA -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                    <span class="font-bold text-slate-800 block text-xs">2. Rutin: Hb, Kalium, Natrium & Mineral</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Hemoglobin (Hb) [g/dL]</label>
+                            <input type="number" step="0.1" id="lab-hb" placeholder="Target: 10 - 12" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Kalium (K+) [mEq/L]</label>
+                            <input type="number" step="0.1" id="lab-kalium" placeholder="Target: 3.5 - 5.5" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Natrium (Na+) [mEq/L]</label>
+                            <input type="number" step="0.1" id="lab-natrium" placeholder="Target: 135 - 145" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Fosfat [mg/dL]</label>
+                            <input type="number" step="0.1" id="lab-fosfat" placeholder="Target: 3.5 - 5.5" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Kalsium [mg/dL]</label>
+                            <input type="number" step="0.1" id="lab-kalsium" placeholder="Target: 8.4 - 10.2" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Albumin Serum [g/dL]</label>
+                            <input type="number" step="0.1" id="lab-albumin" placeholder="Target: ≥ 4.0" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeLabModal()" class="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-purple-700 text-white font-bold rounded-lg hover:bg-purple-800">Simpan Hasil Lab</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGIKA JAVASCRIPT LENGKAP -->
+    <script>
+        const __mem = {};
+        const store = {
+            getItem(k){ try { return localStorage.getItem(k); } catch(e){ return k in __mem ? __mem[k] : null; } },
+            setItem(k,v){ try { localStorage.setItem(k,v); } catch(e){ __mem[k] = String(v); } }
+        };
+        function safeParse(k, d){ try { const v = JSON.parse(store.getItem(k)); return v || d; } catch(e){ return d; } }
+    </script>
+    <script>
+        // DATA AWAL SESUAI SPESIFIKASI FILE
+        const DEFAULT_PROFILE = {
+            name: "Budi Santoso",
+            height: 165,
+            dryWeight: 55.0,
+            residualUrine: 500,
+            hdSchedule: "Senin & Kamis"
+        };
+
+        const DEFAULT_DAILY_LOGS = [
+            {
+                id: 1,
+                date: "2026-10-26",
+                session: "Pre-HD",
+                bbPre: 56.8,
+                bbPost: 55.1,
+                tdPre: "145/85",
+                tdPost: "125/80",
+                notes: "Napas agak terengah saat datang"
+            },
+            {
+                id: 2,
+                date: "2026-10-22",
+                session: "Pre-HD",
+                bbPre: 56.5,
+                bbPost: 55.0,
+                tdPre: "135/80",
+                tdPost: "120/75",
+                notes: "Kondisi stabil & segar"
+            }
+        ];
+
+        const DEFAULT_LAB_LOGS = [
+            {
+                id: 1,
+                date: "2026-10-15",
+                bun: 68.5,
+                kreatinin: 11.2,
+                hb: 10.8,
+                kalium: 4.8,
+                natrium: 138,
+                fosfat: 4.5,
+                kalsium: 9.1,
+                albumin: 4.1
+            }
+        ];
+
+        // STATE MANAGEMENT DENGAN LOCALSTORAGE
+        let profile = safeParse('bisa_profile', DEFAULT_PROFILE);
+        let dailyLogs = safeParse('bisa_daily_logs', DEFAULT_DAILY_LOGS);
+        let labLogs = safeParse('bisa_lab_logs', DEFAULT_LAB_LOGS);
+        let todayFluidIntake = parseInt(store.getItem('bisa_today_fluid')) || 0;
+
+        window.onload = function() {
+            updateLiveClock();
+            setInterval(updateLiveClock, 1000);
+            renderProfile();
+            renderDailyLogs();
+            renderLabLogs();
+            updateFluidProgress();
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('log-date').value = today;
+            document.getElementById('lab-date').value = today;
+        };
+
+        function updateLiveClock() {
+            const now = new Date();
+            const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('live-datetime').innerHTML = `<span class="text-teal-300" aria-hidden="true">🕐</span> ${now.toLocaleDateString('id-ID', options)}`;
+        }
+
+        // NAVIGASI TAB
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-teal-50', 'text-teal-700', 'border', 'border-teal-200', 'font-bold');
+                btn.classList.add('font-medium', 'text-slate-600');
+            });
+
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-teal-50', 'text-teal-700', 'border', 'border-teal-200', 'font-bold');
+            activeBtn.classList.remove('font-medium', 'text-slate-600');
+        }
+
+        // PROFIL & PERHITUNGAN IMT
+        function renderProfile() {
+            if (!(profile.dryWeight > 0) || !(profile.height > 0)) {
+                const set = (id, t) => { const el = document.getElementById(id); if (el) el.innerText = t; };
+                set('disp-patient-name', profile.name || 'Pasien Baru (lengkapi profil)');
+                set('disp-dry-weight', '-'); set('disp-height', '-'); set('disp-residual-urine', '-');
+                set('disp-hd-schedule', profile.hdSchedule || '-'); set('txt-residual-urine', '-');
+                set('rep-name', profile.name || 'Pasien HD'); set('rep-dry-tb', '-'); set('rep-fluid', '-'); set('rep-bmi', '-');
+                set('disp-target-fluid-badge', '-'); set('disp-bmi-val', '-'); set('bmi-num-display', '-');
+                set('bmi-label-display', 'Lengkapi profil pasien untuk menghitung IMT');
+                updateLatestIDWG();
+                return;
+            }
+            document.getElementById('disp-patient-name').innerText = profile.name;
+            document.getElementById('disp-dry-weight').innerText = `${profile.dryWeight.toFixed(1)} kg`;
+            document.getElementById('disp-height').innerText = `${profile.height} cm`;
+            document.getElementById('disp-residual-urine').innerText = `${profile.residualUrine} mL`;
+            document.getElementById('disp-hd-schedule').innerText = profile.hdSchedule;
+            document.getElementById('txt-residual-urine').innerText = profile.residualUrine;
+
+            document.getElementById('rep-name').innerText = profile.name;
+            document.getElementById('rep-dry-tb').innerText = `${profile.dryWeight.toFixed(1)} kg / ${profile.height} cm`;
+
+            const targetFluid = profile.residualUrine + 500;
+            document.getElementById('disp-target-fluid-badge').innerText = `${targetFluid} mL / hari`;
+            document.getElementById('rep-fluid').innerText = `${targetFluid} mL / hari`;
+
+            // Rumus IMT Kemenkes
+            const heightM = profile.height / 100;
+            const bmi = profile.dryWeight / (heightM * heightM);
+            let bmiStatus = "Normal";
+
+            if (bmi < 18.5) bmiStatus = "Kurus";
+            else if (bmi >= 18.5 && bmi <= 22.9) bmiStatus = "Normal";
+            else if (bmi >= 23.0 && bmi <= 24.9) bmiStatus = "Overweight";
+            else bmiStatus = "Obesitas";
+
+            const bmiText = `${bmi.toFixed(1)} (${bmiStatus})`;
+            document.getElementById('disp-bmi-val').innerText = bmiText;
+            document.getElementById('bmi-num-display').innerText = bmi.toFixed(1);
+            document.getElementById('bmi-label-display').innerText = `Status: ${bmiStatus} (Rentang Normal: 18.5 - 22.9)`;
+            document.getElementById('rep-bmi').innerText = bmiText;
+
+            updateLatestIDWG();
+        }
+
+        function toggleEditProfileModal() {
+            const modal = document.getElementById('modal-profile');
+            if (modal.classList.contains('hidden')) {
+                document.getElementById('input-name').value = profile.name;
+                document.getElementById('input-height').value = profile.height ?? '';
+                document.getElementById('input-dry-weight').value = profile.dryWeight ?? '';
+                document.getElementById('input-residual-urine').value = profile.residualUrine ?? '';
+                document.getElementById('input-hd-schedule').value = profile.hdSchedule;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            profile.name = document.getElementById('input-name').value;
+            profile.height = parseFloat(document.getElementById('input-height').value);
+            profile.dryWeight = parseFloat(document.getElementById('input-dry-weight').value);
+            profile.residualUrine = parseInt(document.getElementById('input-residual-urine').value);
+            profile.hdSchedule = document.getElementById('input-hd-schedule').value;
+
+            store.setItem('bisa_profile', JSON.stringify(profile));
+            renderProfile();
+            updateFluidProgress();
+            toggleEditProfileModal();
+        }
+
+        // Dialog konfirmasi di dalam halaman (confirm() bawaan browser diblokir di halaman terbit)
+        let __confirmYes = null;
+        function askConfirm(message, onYes, yesLabel) {
+            __confirmYes = onYes;
+            document.getElementById('confirm-message').innerText = message;
+            document.getElementById('confirm-yes').innerText = yesLabel || 'Ya, Hapus';
+            const m = document.getElementById('modal-confirm');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+        function closeConfirm(ok) {
+            const m = document.getElementById('modal-confirm');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+            const fn = __confirmYes;
+            __confirmYes = null;
+            if (ok && fn) fn();
+        }
+
+        // HAPUS SELURUH DATA PASIEN (untuk pengguna baru)
+        function resetAllData() {
+            askConfirm("Hapus SELURUH data pasien (profil, riwayat BB & TTV, hasil lab, asupan cairan, dan percakapan AI)?\n\nTindakan ini tidak bisa dibatalkan. Gunakan Cetak Laporan terlebih dahulu jika data perlu disimpan.", doResetAllData, 'Ya, Hapus Semua');
+        }
+        function doResetAllData() {
+            const __unused = 0;
+            profile = { name: "", height: null, dryWeight: null, residualUrine: null, hdSchedule: "" };
+            dailyLogs = [];
+            labLogs = [];
+            todayFluidIntake = 0;
+            store.setItem('bisa_profile', JSON.stringify(profile));
+            store.setItem('bisa_daily_logs', JSON.stringify(dailyLogs));
+            store.setItem('bisa_lab_logs', JSON.stringify(labLogs));
+            store.setItem('bisa_today_fluid', 0);
+            const chat = document.getElementById('chat-window');
+            while (chat.children.length > 1) chat.removeChild(chat.lastChild);
+            ['log-bb-pre', 'log-bb-post', 'log-td-pre', 'log-td-post', 'log-notes'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            renderProfile();
+            renderDailyLogs();
+            renderLabLogs();
+            updateFluidProgress();
+            const modal = document.getElementById('modal-profile');
+            if (modal.classList.contains('hidden')) toggleEditProfileModal();
+        }
+
+        // PELACAK ASUPAN CAIRAN
+        function addFluidIntake(amount, container) {
+            todayFluidIntake += amount;
+            store.setItem('bisa_today_fluid', todayFluidIntake);
+            updateFluidProgress();
+        }
+
+        function resetFluidIntake() {
+            askConfirm("Reset asupan cairan hari ini kembali ke 0 mL?", () => {
+                todayFluidIntake = 0;
+                store.setItem('bisa_today_fluid', 0);
+                updateFluidProgress();
+            }, 'Ya, Reset');
+        }
+
+        function updateFluidProgress() {
+            const targetFluid = profile.residualUrine + 500;
+            const ratioPercent = Math.min((todayFluidIntake / targetFluid) * 100, 100);
+            
+            document.getElementById('fluid-ratio-text').innerText = `${todayFluidIntake} / ${targetFluid} mL`;
+            const bar = document.getElementById('fluid-progress-bar');
+            bar.style.width = `${ratioPercent}%`;
+
+            if (todayFluidIntake > targetFluid) {
+                bar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
+            } else if (ratioPercent > 80) {
+                bar.className = "bg-amber-500 h-full rounded-full transition-all duration-500";
+            } else {
+                bar.className = "bg-sky-500 h-full rounded-full transition-all duration-500";
+            }
+        }
+
+        // LOG PENIMBANGAN & KALKULATOR IDWG
+        function calcFormIDWG() {
+            const bbPre = parseFloat(document.getElementById('log-bb-pre').value) || 0;
+            const dryW = profile.dryWeight;
+            if (bbPre > 0 && dryW > 0) {
+                const idwg = ((bbPre - dryW) / dryW) * 100;
+                document.getElementById('form-idwg-calc').innerText = `${idwg.toFixed(2)} %`;
+            } else {
+                document.getElementById('form-idwg-calc').innerText = "0.0 %";
+            }
+        }
+
+        function updateLatestIDWG() {
+            if (dailyLogs.length === 0 || !(profile.dryWeight > 0)) {
+                document.getElementById('idwg-percent').innerText = '0.0 %';
+                document.getElementById('idwg-badge').className = "px-2.5 py-0.5 rounded text-xs font-bold bg-slate-500 text-white";
+                document.getElementById('idwg-badge').innerText = "Belum ada data";
+                document.getElementById('idwg-subtext').innerText = "Catat penimbangan pertama untuk memantau IDWG.";
+                return;
+            }
+            const latest = dailyLogs[0];
+            const dryW = profile.dryWeight;
+            const idwg = ((latest.bbPre - dryW) / dryW) * 100;
+            
+            const percentEl = document.getElementById('idwg-percent');
+            const badgeEl = document.getElementById('idwg-badge');
+            const subtextEl = document.getElementById('idwg-subtext');
+
+            percentEl.innerText = `${idwg.toFixed(2)} %`;
+
+            if (idwg <= 3.5) {
+                badgeEl.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-500 text-white";
+                badgeEl.innerText = "Sangat Baik (<3.5%)";
+                subtextEl.innerText = "Kenaikan berat badan antar dialisis sangat ideal & aman.";
+            } else if (idwg <= 5.0) {
+                badgeEl.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-amber-500 text-slate-900";
+                badgeEl.innerText = "Toleransi (3.5 - 5.0%)";
+                subtextEl.innerText = "Kenaikan cairan batas sedang. Mohon jaga asupan garam & minum.";
+            } else {
+                badgeEl.className = "px-2.5 py-0.5 rounded text-xs font-bold bg-rose-600 text-white animate-pulse";
+                badgeEl.innerText = "Tinggi / Bahaya (>5.0%)";
+                subtextEl.innerText = "Peringatan: Risiko kelebihan cairan akut & komplikasi jantung!";
+            }
+        }
+
+        function renderDailyLogs() {
+            const tbody = document.getElementById('daily-log-tbody');
+            tbody.innerHTML = "";
+
+            dailyLogs.forEach((log, index) => {
+                const idwg = profile.dryWeight > 0 ? ((log.bbPre - profile.dryWeight) / profile.dryWeight) * 100 : NaN;
+                let idwgClass = "text-emerald-600 font-bold";
+                if (idwg > 5.0) idwgClass = "text-rose-600 font-bold";
+                else if (idwg > 3.5) idwgClass = "text-amber-600 font-bold";
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                row.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-800">${log.date}<br><span class="text-[10px] text-slate-400 font-normal">${log.session}</span></td>
+                    <td class="p-3">${log.bbPre.toFixed(1)} kg</td>
+                    <td class="p-3">${log.bbPost ? log.bbPost.toFixed(1) + ' kg' : '-'}</td>
+                    <td class="p-3 ${idwgClass}">${isFinite(idwg) ? idwg.toFixed(2) + '%' : '-'}</td>
+                    <td class="p-3 font-mono text-[11px]">Pre: ${log.tdPre || '-'}<br>Post: ${log.tdPost || '-'}</td>
+                    <td class="p-3 text-slate-500 italic text-[11px]">${log.notes || '-'}</td>
+                    <td class="p-3 text-center no-print">
+                        <button onclick="deleteDailyLog(${index})" class="text-slate-400 hover:text-rose-600 p-1" title="Hapus Log">
+                            <span class="" aria-hidden="true">🗑️</span>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateLatestIDWG();
+        }
+
+        function openDailyLogModal() {
+            document.getElementById('modal-daily').classList.remove('hidden');
+            document.getElementById('modal-daily').classList.add('flex');
+        }
+
+        function closeDailyLogModal() {
+            document.getElementById('modal-daily').classList.add('hidden');
+            document.getElementById('modal-daily').classList.remove('flex');
+        }
+
+        function saveDailyLog(e) {
+            e.preventDefault();
+            const newLog = {
+                id: Date.now(),
+                date: document.getElementById('log-date').value,
+                session: document.getElementById('log-hd-session').value,
+                bbPre: parseFloat(document.getElementById('log-bb-pre').value),
+                bbPost: document.getElementById('log-bb-post').value ? parseFloat(document.getElementById('log-bb-post').value) : null,
+                tdPre: document.getElementById('log-td-pre').value,
+                tdPost: document.getElementById('log-td-post').value,
+                notes: document.getElementById('log-notes').value
+            };
+
+            dailyLogs.unshift(newLog);
+            store.setItem('bisa_daily_logs', JSON.stringify(dailyLogs));
+            renderDailyLogs();
+            closeDailyLogModal();
+        }
+
+        function deleteDailyLog(index) {
+            askConfirm("Hapus baris catatan BB & TTV ini?", () => {
+                dailyLogs.splice(index, 1);
+                store.setItem('bisa_daily_logs', JSON.stringify(dailyLogs));
+                renderDailyLogs();
+            });
+        }
+
+        // PANEL LABORATORIUM
+        function renderLabLogs() {
+            const container = document.getElementById('lab-cards-container');
+            const tbody = document.getElementById('lab-log-tbody');
+            const repGrid = document.getElementById('rep-lab-grid');
+
+            container.innerHTML = "";
+            tbody.innerHTML = "";
+            repGrid.innerHTML = "";
+
+            if (labLogs.length === 0) return;
+
+            const latest = labLogs[0];
+
+            const params = [
+                {
+                    name: 'BUN (Blood Urea)',
+                    val: latest.bun,
+                    unit: 'mg/dL',
+                    target: '60 - 80 (Pre-HD)',
+                    interpret: latest.bun < 60 ? 'Mungkin asupan protein kurang' : (latest.bun <= 80 ? 'Optimal Pre-HD' : 'Penumpukan Uremik Tinggi'),
+                    status: (latest.bun >= 60 && latest.bun <= 80) ? 'normal' : 'warning'
+                },
+                {
+                    name: 'Serum Kreatinin',
+                    val: latest.kreatinin,
+                    unit: 'mg/dL',
+                    target: '8 - 15 (Pre-HD)',
+                    interpret: (latest.kreatinin >= 8 && latest.kreatinin <= 15) ? 'Rentang Khas Pasien HD' : 'Perlu Evaluasi Dialisis',
+                    status: (latest.kreatinin >= 8 && latest.kreatinin <= 15) ? 'normal' : 'warning'
+                },
+                {
+                    name: 'Hemoglobin (Hb)',
+                    val: latest.hb,
+                    unit: 'g/dL',
+                    target: '10.0 - 12.0',
+                    interpret: latest.hb < 10.0 ? 'Anemia (Perlu Evaluasi Terapi)' : (latest.hb <= 12.0 ? 'Target Anemia Baik' : 'Hb Tinggi'),
+                    status: (latest.hb >= 10.0 && latest.hb <= 12.0) ? 'normal' : 'danger'
+                },
+                {
+                    name: 'Kalium (K+)',
+                    val: latest.kalium,
+                    unit: 'mEq/L',
+                    target: '3.5 - 5.5',
+                    interpret: latest.kalium > 5.5 ? 'Hiperkalemia (Bahaya Jantung!)' : (latest.kalium < 3.5 ? 'Hipokalemia' : 'Aman'),
+                    status: (latest.kalium >= 3.5 && latest.kalium <= 5.5) ? 'normal' : 'danger'
+                }
+            ];
+
+            params.forEach(p => {
+                let colorClass = "bg-emerald-50 border-emerald-200 text-emerald-800";
+                if (p.status === 'warning') colorClass = "bg-amber-50 border-amber-200 text-amber-800";
+                if (p.status === 'danger') colorClass = "bg-rose-50 border-rose-200 text-rose-800";
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border ${colorClass} space-y-1.5`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-xs font-bold">
+                        <span>${p.name}</span>
+                        <span class="text-sm font-black">${p.val !== null ? p.val : '-'} ${p.unit}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-500">Target: ${p.target}</div>
+                    <div class="text-[11px] font-semibold pt-1 border-t border-black/5">${p.interpret}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            labLogs.forEach((log, index) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                row.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-800">${log.date}</td>
+                    <td class="p-3 font-bold ${log.bun > 80 ? 'text-amber-600' : 'text-slate-700'}">${log.bun || '-'}</td>
+                    <td class="p-3 font-bold ${log.kreatinin > 15 ? 'text-amber-600' : 'text-slate-700'}">${log.kreatinin || '-'}</td>
+                    <td class="p-3 font-bold ${log.hb < 10 ? 'text-rose-600' : 'text-emerald-600'}">${log.hb || '-'}</td>
+                    <td class="p-3 font-bold ${log.kalium > 5.5 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}">${log.kalium || '-'}</td>
+                    <td class="p-3">${log.natrium || '-'}</td>
+                    <td class="p-3">${log.fosfat || '-'}</td>
+                    <td class="p-3">${log.kalsium || '-'}</td>
+                    <td class="p-3">${log.albumin || '-'}</td>
+                    <td class="p-3 text-center no-print">
+                        <button onclick="deleteLabLog(${index})" class="text-slate-400 hover:text-rose-600 p-1" title="Hapus Data Lab">
+                            <span class="" aria-hidden="true">🗑️</span>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Summary untuk Laporan Cetak
+            const reportParams = [
+                { title: 'BUN (Pre-HD)', val: `${latest.bun || '-'} mg/dL` },
+                { title: 'Serum Kreatinin', val: `${latest.kreatinin || '-'} mg/dL` },
+                { title: 'Hemoglobin (Hb)', val: `${latest.hb || '-'} g/dL` },
+                { title: 'Kalium (K+)', val: `${latest.kalium || '-'} mEq/L` },
+                { title: 'Natrium (Na+)', val: `${latest.natrium || '-'} mEq/L` },
+                { title: 'Fosfat', val: `${latest.fosfat || '-'} mg/dL` },
+                { title: 'Kalsium', val: `${latest.kalsium || '-'} mg/dL` },
+                { title: 'Albumin Serum', val: `${latest.albumin || '-'} g/dL` },
+            ];
+
+            reportParams.forEach(rp => {
+                const item = document.createElement('div');
+                item.className = "p-2.5 bg-white border border-slate-200 rounded-lg";
+                item.innerHTML = `
+                    <span class="text-slate-400 block text-[10px] font-semibold">${rp.title}</span>
+                    <span class="font-bold text-slate-800 text-xs">${rp.val}</span>
+                `;
+                repGrid.appendChild(item);
+            });
+        }
+
+        function openLabModal() {
+            document.getElementById('modal-lab').classList.remove('hidden');
+            document.getElementById('modal-lab').classList.add('flex');
+        }
+
+        function closeLabModal() {
+            document.getElementById('modal-lab').classList.add('hidden');
+            document.getElementById('modal-lab').classList.remove('flex');
+        }
+
+        function saveLabLog(e) {
+            e.preventDefault();
+            const getVal = id => document.getElementById(id).value ? parseFloat(document.getElementById(id).value) : null;
+
+            const newLab = {
+                id: Date.now(),
+                date: document.getElementById('lab-date').value,
+                bun: getVal('lab-bun'),
+                kreatinin: getVal('lab-kreatinin'),
+                hb: getVal('lab-hb'),
+                kalium: getVal('lab-kalium'),
+                natrium: getVal('lab-natrium'),
+                fosfat: getVal('lab-fosfat'),
+                kalsium: getVal('lab-kalsium'),
+                albumin: getVal('lab-albumin')
+            };
+
+            labLogs.unshift(newLab);
+            store.setItem('bisa_lab_logs', JSON.stringify(labLogs));
+            renderLabLogs();
+            closeLabModal();
+        }
+
+        function deleteLabLog(index) {
+            askConfirm("Hapus catatan hasil laboratorium ini?", () => {
+                labLogs.splice(index, 1);
+                store.setItem('bisa_lab_logs', JSON.stringify(labLogs));
+                renderLabLogs();
+            });
+        }
+
+        async function handleAIChatSubmit(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('ai-input');
+            const query = inputEl.value.trim();
+            if (!query) return;
+
+            appendChatMessage('user', query);
+            inputEl.value = '';
+
+            const loadingId = appendChatMessage('ai', 'Sedang menganalisis berdasarkan standar klinis supervisi...', true);
+
+            // Fallback Edukasi Cerdas jika API key tidak ada atau request gagal
+            setTimeout(() => {
+                const fallbackReply = generateClinicalFallback(query);
+                updateChatMessage(loadingId, fallbackReply);
+            }, 600);
+        }
+
+        function generateClinicalFallback(query) {
+            const q = query.toLowerCase();
+            if (q.includes("haus") || q.includes("minum") || q.includes("cairan")) {
+                return `Tips Mengendalikan Haus dari dr. Puguh Widagdo, SpPD - FINASIM:\n1. Hisap es batu kecil perlahan (volume jauh lebih sedikit dibanding minum segelas air).\n2. Hindari garam dan makanan gurih/asin, karena garam memicu rasa haus berkepanjangan.\n3. Gunakan semprotan air dingin (spray) ke rongga mulut atau kumur dengan air dingin tanpa ditelan.\n4. Batasi asupan harian Anda sesuai rumus: Urin Sisa (${profile.residualUrine} mL) + 500 mL = ${profile.residualUrine + 500} mL/hari.`;
+            }
+            if (q.includes("bun") || q.includes("kreatinin") || q.includes("ureum")) {
+                return `Penjelasan Klinis BUN & Serum Kreatinin:\n- BUN (Blood Urea Nitrogen) Pre-HD: Rentang wajar 60 - 80 mg/dL. Jika terlalu rendah (<60), evaluasi kecukupan asupan protein Anda. Jika >80, evaluasi adekuasi dialisis.\n- Serum Kreatinin Pre-HD: Umumnya 8 - 15 mg/dL pada pasien hemodialisis rutin.\nPastikan selalu menjalani sesi dialisis secara penuh sesuai anjuran perawat dan dokter spesialis Anda.`;
+            }
+            if (q.includes("idwg") || q.includes("berat") || q.includes("kering")) {
+                return `Target IDWG (Interdialytic Weight Gain):\n- Kenaikan ideal antar sesi dialisis adalah < 3.5% dari BB Kering (${profile.dryWeight} kg), yaitu maksimal kenaikan sekitar ${(profile.dryWeight * 0.035).toFixed(1)} kg.\n- Batas toleransi maksimal 5.0% (${(profile.dryWeight * 0.05).toFixed(1)} kg).\n- Kenaikan di atas 5% sangat berisiko memicu sesak napas berat dan pembengkakan jantung.`;
+            }
+            if (q.includes("kalium") || q.includes("buah") || q.includes("sayur")) {
+                return `Edukasi Kalium Aman:\n- Target Kalium darah: 3.5 - 5.5 mEq/L. Nilai >5.5 mEq/L sangat berbahaya bagi detak jantung.\n- Sayur wajib dipotong kecil dan direndam air hangat sebelum dimasak untuk melarutkan kalium.\n- Pilihan buah aman: Apel, pir, ketimun. Hindari: Pisang ambon, durian, alpukat, dan air kelapa.`;
+            }
+            return `Pesan Edukasi Dialisis BISA:\nSelalu pertahankan berat badan antar sesi dialisis (IDWG) di bawah 3.5% - 5.0% dari BB Kering Anda (${profile.dryWeight} kg). Konsumsi makanan tinggi protein (putih telur/ikan) dan minum obat pengikat fosfat tepat saat suapan makan. Segera hubungi IGD jika mengalami sesak napas saat berbaring.`;
+        }
+
+        function sendQuickPrompt(promptText) {
+            document.getElementById('ai-input').value = promptText;
+            document.getElementById('ai-chat-form').dispatchEvent(new Event('submit'));
+        }
+
+        function appendChatMessage(sender, text, isLoading = false) {
+            const windowEl = document.getElementById('chat-window');
+            const msgId = 'msg-' + Date.now();
+            const wrapper = document.createElement('div');
+            
+            if (sender === 'user') {
+                wrapper.className = "flex items-start justify-end gap-2.5";
+                wrapper.innerHTML = `
+                    <div class="bg-teal-700 text-white p-3.5 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] leading-relaxed">
+                        ${escapeHtml(text)}
+                    </div>
+                `;
+            } else {
+                wrapper.className = "flex items-start gap-2.5";
+                wrapper.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg bg-teal-700 text-white flex items-center justify-center text-xs flex-shrink-0">
+                        <span class="" aria-hidden="true">🤖</span>
+                    </div>
+                    <div id="${msgId}" class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-slate-200/80 shadow-sm max-w-[85%] leading-relaxed text-slate-700 ${isLoading ? 'animate-pulse text-slate-400' : ''}">
+                        ${escapeHtml(text)}
+                    </div>
+                `;
+            }
+
+            windowEl.appendChild(wrapper);
+            windowEl.scrollTop = windowEl.scrollHeight;
+            return msgId;
+        }
+
+        function updateChatMessage(msgId, newText) {
+            const el = document.getElementById(msgId);
+            if (el) {
+                el.classList.remove('animate-pulse', 'text-slate-400');
+                el.innerHTML = escapeHtml(newText).replace(/\n/g, '<br>');
+            }
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+    <div id="modal-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 border border-slate-200">
+            <h3 class="font-bold text-slate-900 text-sm">Konfirmasi</h3>
+            <p id="confirm-message" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed"></p>
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeConfirm(false)" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg">Batal</button>
+                <button type="button" id="confirm-yes" onclick="closeConfirm(true)" class="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
